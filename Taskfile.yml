@@ -1,0 +1,45 @@
+version: '3'
+
+tasks:
+  default:
+    desc: List available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  init:
+    desc: Set up the project's env
+    vars:
+      VERSION:
+        sh: head -1 .python-version
+    requires:
+      vars: [VIRTUAL_ENV]
+    cmds:
+      - rm -rf {{.VIRTUAL_ENV}}
+      - pyenv update
+      - pyenv install -s {{.VERSION}}
+      - pyenv local {{.VERSION}}
+      - direnv allow
+      - pip install --upgrade pip
+      - pip install pip-tools
+      - pip-compile -o requirements.txt requirements.in
+      - pip-sync requirements.txt
+      - chmod u+x run src/*.py
+
+  asyncio:
+    desc: Enter asyncio prompt
+    cmds:
+      - python -m asyncio
+    interactive: true
+
+  run:
+    desc: Run a module
+    silent: true
+    cmds:
+      - python -m src.{{.module | default "default"}}
+
+  fix:
+    desc: Run fixer tools on the project's source files
+    cmds:
+      - isort src/*.py
+      - black src/*.py
